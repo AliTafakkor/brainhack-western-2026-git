@@ -8,6 +8,33 @@ import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 
 
+def _plot_isi_hist(ax, spike_times, label):
+    isi = np.diff(np.asarray(spike_times, dtype=float)) if len(spike_times) > 1 else np.array([])
+    isi = isi[np.isfinite(isi)]
+
+    if len(isi) == 0:
+        ax.text(0.5, 0.5, "Not enough spikes for ISI", ha="center", va="center", transform=ax.transAxes)
+        ax.set_title(f"{label} ISI", fontsize=10)
+        ax.set_xlabel("Inter-spike interval (ms)")
+        ax.set_ylabel("Count")
+        return
+
+    if np.isclose(np.ptp(isi), 0.0):
+        ax.bar([isi[0]], [len(isi)], width=0.5, color="#4CAF50", edgecolor="white")
+    else:
+        bins = max(5, min(20, int(np.sqrt(len(isi)))))
+        try:
+            ax.hist(isi, bins=bins, color="#4CAF50", edgecolor="white")
+        except ValueError:
+            ax.hist(isi, bins="auto", color="#4CAF50", edgecolor="white")
+
+    cv = np.std(isi) / np.mean(isi) if np.mean(isi) > 0 else np.nan
+    cv_text = f"CV={cv:.3f}" if np.isfinite(cv) else "CV=n/a"
+    ax.set_title(f"{label} ISI ({cv_text})", fontsize=10)
+    ax.set_xlabel("Inter-spike interval (ms)")
+    ax.set_ylabel("Count")
+
+
 def plot_results(results_file="simulation_results.npz"):
     data = np.load(results_file)
 
@@ -37,26 +64,11 @@ def plot_results(results_file="simulation_results.npz"):
         ax_r.set_xlabel("Time (ms)")
         ax_r.set_yticks([])
 
-    # ISI histogram (constant input only)
-    ax_isi = fig.add_subplot(gs[2, :])
-    isi = np.diff(spks[0]) if len(spks[0]) > 1 else np.array([])
-    if len(isi) == 0:
-        ax_isi.text(0.5, 0.5, "Not enough spikes for ISI",
-                    ha="center", transform=ax_isi.transAxes)
-    elif np.ptp(isi) == 0:
-        # All ISIs identical — constant input produces perfectly regular firing
-        ax_isi.bar([isi[0]], [len(isi)], width=0.5, color="#4CAF50", edgecolor="white")
-        ax_isi.set_xlabel("Inter-spike interval (ms)")
-        ax_isi.set_ylabel("Count")
-        ax_isi.set_title(
-            f"ISI distribution (constant input) — perfectly regular: {isi[0]:.1f} ms",
-            fontsize=10
-        )
-    else:
-        ax_isi.hist(isi, bins=20, color="#4CAF50", edgecolor="white")
-        ax_isi.set_xlabel("Inter-spike interval (ms)")
-        ax_isi.set_ylabel("Count")
-        ax_isi.set_title("ISI distribution (constant input)", fontsize=10)
+    # ISI histograms for both conditions
+    ax_isi_const = fig.add_subplot(gs[2, 0])
+    ax_isi_noise = fig.add_subplot(gs[2, 1])
+    _plot_isi_hist(ax_isi_const, spks[0], "Constant")
+    _plot_isi_hist(ax_isi_noise, spks[1], "Noisy")
 
     plt.savefig("lif_results.png", dpi=150, bbox_inches="tight")
     print("Plot saved to lif_results.png")
