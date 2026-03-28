@@ -39,15 +39,24 @@ def plot_results(results_file="simulation_results.npz"):
 
     # ISI histogram (constant input only)
     ax_isi = fig.add_subplot(gs[2, :])
-    isi = np.diff(spks[0]) if len(spks[0]) > 1 else []
-    if len(isi):
+    isi = np.diff(spks[0]) if len(spks[0]) > 1 else np.array([])
+    if len(isi) == 0:
+        ax_isi.text(0.5, 0.5, "Not enough spikes for ISI",
+                    ha="center", transform=ax_isi.transAxes)
+    elif np.ptp(isi) == 0:
+        # All ISIs identical — constant input produces perfectly regular firing
+        ax_isi.bar([isi[0]], [len(isi)], width=0.5, color="#4CAF50", edgecolor="white")
+        ax_isi.set_xlabel("Inter-spike interval (ms)")
+        ax_isi.set_ylabel("Count")
+        ax_isi.set_title(
+            f"ISI distribution (constant input) — perfectly regular: {isi[0]:.1f} ms",
+            fontsize=10
+        )
+    else:
         ax_isi.hist(isi, bins=20, color="#4CAF50", edgecolor="white")
         ax_isi.set_xlabel("Inter-spike interval (ms)")
         ax_isi.set_ylabel("Count")
         ax_isi.set_title("ISI distribution (constant input)", fontsize=10)
-    else:
-        ax_isi.text(0.5, 0.5, "Not enough spikes for ISI",
-                    ha="center", transform=ax_isi.transAxes)
 
     plt.savefig("lif_results.png", dpi=150, bbox_inches="tight")
     print("Plot saved to lif_results.png")
