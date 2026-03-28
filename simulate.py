@@ -46,7 +46,7 @@ def run_simulation(i_ext_fn, duration=500.0, dt=0.1, seed=42):
 if __name__ == "__main__":
     # --- Experiment 1: constant input ---
     def constant_input(t):
-        return 2.5  # nA
+        return 1.6  # nA (near threshold for more interpretable baseline)
 
     t, v, spikes = run_simulation(constant_input, duration=500)
     print(f"Constant input → {len(spikes)} spikes")
@@ -54,7 +54,7 @@ if __name__ == "__main__":
 
     # --- Experiment 2: noisy input ---
     def noisy_input(t):
-        return 2.5 + np.random.normal(0, 1.0)
+        return 1.6 + np.random.normal(0, 2.0)
 
     t2, v2, spikes2 = run_simulation(noisy_input, duration=500)
     print(f"\nNoisy input → {len(spikes2)} spikes")
